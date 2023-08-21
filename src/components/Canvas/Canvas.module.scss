@@ -1,0 +1,48 @@
+.canvas {
+  width: 80%;
+  height: 80%;
+  display: flex;
+
+  .container {
+    position: relative;
+    flex-grow: 1;
+    background: white;
+    border-radius: 18px;
+
+    .editBackdrop {
+      position: absolute;
+      display: none;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 2;
+      border-radius: 18px;
+
+      &.openBackdrop {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background: rgba(0,0,0,.5);
+        color: white;
+      }
+    }
+  }
+
+  .editBtn {
+    cursor: pointer;
+    width: 50px;
+    height: 30px;
+
+    &.activeBtn {
+      background: lightgreen;
+    }
+
+    &.defaultBtn {
+      background: rosybrown;
+    }
+  }
+}
+
+
