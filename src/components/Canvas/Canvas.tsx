@@ -12,8 +12,12 @@ interface CardData {
 	text: string;
 }
 
+const CARD_WIDTH = 200;
+const CARD_HEIGHT = 300;
+
 export const Canvas = () => {
 	// const cursorPositionRef = useRef<CursorPosition | null>(null);
+	const canvasRef = useRef<HTMLDivElement | null>(null);
 	const [cards, setCards] = useState<CardData[]>([])
 	const [editMode, setEditMode] = useState<boolean>(false)
 	const ref = useRef<HTMLTextAreaElement | null>(null);
@@ -41,19 +45,34 @@ export const Canvas = () => {
 	}
 
 	const onChangeCardPosition = useCallback((cardId: number, left: number, top: number) => {
+		const canvasSizes = canvasRef.current?.getBoundingClientRect()
+		const canvasWidth = canvasSizes?.width || 0
+		const canvasHeight = canvasSizes?.height || 0
+
+		console.log(left)
+		const nextLeft = left < 0 ? 0 : left > canvasWidth - CARD_WIDTH ? canvasWidth - CARD_WIDTH : left;
+		const nextTop = top < 0 ? 0 : top > canvasHeight - CARD_HEIGHT ? canvasHeight - CARD_HEIGHT : top;
+
 		setCards(prev => prev.map(item => item.id === cardId ? ({
 			...item,
-			left,
-			top,
+			left: nextLeft,
+			top: nextTop,
+		}) : item))
+	}, [])
+
+	const onChangeCardText = useCallback((cardId: number, value: string) => {
+		setCards(prev => prev.map(item => item.id === cardId ? ({
+			...item,
+			text: value,
 		}) : item))
 	}, [])
 
 	return (
-		<div className={styles.canvas}>
+		<div className={styles.wrapper}>
 			<button onClick={onClickEdit} className={clsx(styles.editBtn, editMode ? styles.defaultBtn : styles.activeBtn)}>Edit</button>
-			<div className={styles.container}>
+			<div className={styles.canvas} ref={canvasRef} >
 				<div className={clsx(styles.editBackdrop, editMode && styles.openBackdrop)} onClick={(e) => onClickBackdrop(e)}>Click to create Card</div>
-				{cards.map((card) => <Card key={card.id} onChangeCardPosition={onChangeCardPosition} {...card}/>)}
+				{cards.map((card) => <Card key={card.id} onChangeCardPosition={onChangeCardPosition} onChangeText={onChangeCardText} {...card}/>)}
 			</div>
 		</div>
 	);

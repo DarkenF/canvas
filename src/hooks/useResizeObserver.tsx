@@ -1,4 +1,4 @@
-import React, {MutableRefObject, useLayoutEffect, useMemo, useState} from 'react';
+import {MutableRefObject, useLayoutEffect, useMemo, useState} from 'react';
 
 export const useResizeObserver = (elemRef: MutableRefObject<HTMLElement | null>): ResizeObserverEntry | null => {
 	const [resizeObserver, setResizeObserver] = useState<ResizeObserverEntry | null>(null)
@@ -19,7 +19,7 @@ export const useResizeObserver = (elemRef: MutableRefObject<HTMLElement | null>)
 		return () => {
 			observer.unobserve(elem)
 		}
-	}, [observer])
+	}, [observer, elemRef])
 
 	return resizeObserver
 };

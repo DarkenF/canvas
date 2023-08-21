@@ -1,9 +1,9 @@
-.canvas {
+.wrapper {
   width: 80%;
   height: 80%;
   display: flex;
 
-  .container {
+  .canvas {
     position: relative;
     flex-grow: 1;
     background: white;
