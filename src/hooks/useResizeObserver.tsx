@@ -1,25 +1,26 @@
-import {MutableRefObject, useLayoutEffect, useMemo, useState} from 'react';
+import { MutableRefObject, useLayoutEffect, useMemo } from 'react';
+import { useEvent } from './useEvent';
 
-export const useResizeObserver = (elemRef: MutableRefObject<HTMLElement | null>): ResizeObserverEntry | null => {
-	const [resizeObserver, setResizeObserver] = useState<ResizeObserverEntry | null>(null)
+export const useResizeObserver = (
+  elemRef: MutableRefObject<HTMLElement | null>,
+  callback: ResizeObserverCallback,
+): ResizeObserver => {
+  const memoCallback = useEvent<ResizeObserverCallback>(callback);
+  const observer = useMemo(() => new ResizeObserver((...args) => memoCallback(...args)), []);
 
-	const observer = useMemo(() => new ResizeObserver(([entry]) => {
-		setResizeObserver(entry)
-	}), [])
+  useLayoutEffect(() => {
+    if (!elemRef.current) {
+      return;
+    }
 
-	useLayoutEffect(() => {
-		if (!elemRef.current) {
-			return;
-		}
+    const elem = elemRef.current;
 
-		const elem = elemRef.current
+    observer.observe(elemRef.current);
 
-		observer.observe(elemRef.current)
+    return () => {
+      observer.unobserve(elem);
+    };
+  }, [observer, elemRef]);
 
-		return () => {
-			observer.unobserve(elem)
-		}
-	}, [observer, elemRef])
-
-	return resizeObserver
+  return observer;
 };

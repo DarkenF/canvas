@@ -1,16 +1,15 @@
-import React, {useRef} from 'react';
+import React from 'react';
 import './App.module.scss';
 
-import styles from './App.module.scss'
-import {Canvas} from "./components/Canvas";
+import styles from './App.module.scss';
+import { Canvas, CanvasProvider } from './components/Canvas';
 
 function App() {
-	const ref = useRef<HTMLTextAreaElement | null>(null);
-
-
   return (
     <div className={styles.wrapper}>
-	    <Canvas />
+      <CanvasProvider>
+        <Canvas />
+      </CanvasProvider>
     </div>
   );
 }
