@@ -50,21 +50,6 @@ export const useCanvasContext = () => {
 
   const { cards, setCards, ...rest } = context;
 
-  // const onMouseMove = useCallback((e: Event) => {
-  // 	h
-  // } , []);
-  //
-  // useEffect(() => {
-  //
-  //
-  // 	const canvasElem = canvasRef.current;
-  //
-  // 	canvasElem?.addEventListener("mousemove", onMouseMove);
-  // 	return () => {
-  // 		canvasElem?.removeEventListener("mousemove", onMouseMove);
-  // 	};
-  // }, []);
-
   const onChangeCardPosition = useCallback((cardId: string, left: number, top: number) => {
     setCards((prev) =>
       prev.map((item) =>
@@ -92,7 +77,7 @@ export const useCanvasContext = () => {
     );
   }, []);
 
-  const createCard = (e: MouseEvent<HTMLDivElement>) => {
+  const createCard = useCallback((e: MouseEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
 
     const x = e.clientX - rect.left;
@@ -107,7 +92,7 @@ export const useCanvasContext = () => {
         text: '',
       },
     ]);
-  };
+  }, []);
 
   return {
     cards,
