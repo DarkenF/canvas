@@ -4,6 +4,7 @@ import { Card } from '../Card';
 
 import styles from './Canvas.module.scss';
 import { useCanvasContext } from './CanvasContext';
+import {useDragAndDrop} from "../../hooks/useDragAndDrop";
 
 interface CanvasPosition {
   x: number;
@@ -20,6 +21,20 @@ export const Canvas = () => {
 	const cardsContainerRef = useRef<HTMLDivElement | null>(null);
 
   const { cards, createCard, canvasRef } = useCanvasContext();
+
+	useDragAndDrop({
+		scale: canvasScale,
+		onMouseMoveHandler: (offsetX, offsetY) => {
+			setPosition(prevState => ({
+				x: prevState.x + offsetX,
+				y: prevState.y + offsetY
+			}))
+		},
+		listenLayout: true,
+		layoutRef: canvasRef,
+		ref: cardsContainerRef
+	})
+
 
   const onClickEdit = () => {
     setEditMode((prev) => {
@@ -48,16 +63,16 @@ export const Canvas = () => {
   useEffect(() => {
     const onZoomCanvasHandler = (e: WheelEvent) => {
 
-      const { deltaY, clientY, clientX } = e;
+      const { deltaY } = e;
       const scale = deltaY * -0.001;
 
       setCanvasScale((prev) => {
         return Math.min(Math.max(0.125, prev * (1 + scale)), 5);
       });
-			setPosition({
-				x: 0,
-				y: 0,
-			})
+			// setPosition({
+			// 	x: 0,
+			// 	y: 0,
+			// })
     };
 
     canvasRef.current?.addEventListener('wheel', onZoomCanvasHandler);
