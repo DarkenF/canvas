@@ -1,4 +1,4 @@
-import React, { FC, useRef, useState, memo, MouseEvent, useEffect } from 'react';
+import React, {FC, useRef, useState, memo, useEffect, useCallback} from 'react';
 import styles from './Card.module.scss';
 import { useOnClickOutside } from '../../hooks/useOnClickOutside';
 import { useCanvasContext } from '../Canvas';
@@ -9,9 +9,10 @@ interface Props {
   top: number;
   left: number;
   text: string;
+	canvasScale: number;
 }
 
-interface ShiftCursorStartPosition {
+interface CursorPosition {
   x: number;
   y: number;
 }
@@ -19,52 +20,64 @@ interface ShiftCursorStartPosition {
 const MOVE_CARD_Z_INDEX = 1000;
 const DEFAULT_CARD_Z_INDEX = 10;
 
-export const Card: FC<Props> = memo(({ text, top, left, id }) => {
-  const isCardDragged = useRef<boolean>(false);
-  const shiftCursor = useRef<ShiftCursorStartPosition | null>(null);
+export const Card: FC<Props> = memo(({ text, top, left, id, canvasScale }) => {
+  const prevCursor = useRef<CursorPosition | null>(null);
   const ref = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   const [edit, setEdit] = useState<boolean>(false);
+  const [isCardDragged, setIsCardDragged] = useState<boolean>(false);
   const [layerIndex, setLayerIndex] = useState<number>(DEFAULT_CARD_Z_INDEX);
   const { onChangeCardPosition, onChangeCardText, canvasRef } = useCanvasContext();
 
-  const onMouseMove = useRafThrottle((e: MouseEvent<HTMLDivElement>) => {
-    if (!isCardDragged.current || !ref.current || !shiftCursor.current) {
+  const onMouseMove = useRafThrottle((e: MouseEvent) => {
+    if (!isCardDragged || !prevCursor.current) {
       return;
     }
 
-    const x = e.pageX - shiftCursor.current?.x;
-    const y = e.pageY - shiftCursor.current?.y;
+	  const offsetY = e.clientY / canvasScale - prevCursor.current.y;
+	  const offsetX = e.clientX / canvasScale - prevCursor.current.x ;
 
-    onChangeCardPosition(id, x, y);
+	  prevCursor.current = {
+		  x: prevCursor.current?.x + offsetX,
+		  y: prevCursor.current?.y + offsetY,
+	  };
+
+    onChangeCardPosition(id, offsetX, offsetY);
   });
 
-  const onMouseUp = () => {
+  const onMouseUp = useCallback(() => {
     if (!canvasRef.current) {
       return;
     }
-    isCardDragged.current = false;
+		setIsCardDragged(false)
     setLayerIndex(DEFAULT_CARD_Z_INDEX);
+  }, []);
 
-    canvasRef.current.removeEventListener('mousemove', onMouseMove as unknown as EventListener);
-    canvasRef.current.removeEventListener('mouseup', onMouseUp);
-  };
+	useEffect(() => {
+		if (isCardDragged) {
+			canvasRef.current?.addEventListener('mousemove', onMouseMove);
+			canvasRef.current?.addEventListener('mouseup', onMouseUp);
+		}
 
-  const onMouseDown = (e: MouseEvent<HTMLDivElement>) => {
+		return () => {
+			canvasRef.current?.removeEventListener('mousemove', onMouseMove);
+			canvasRef.current?.removeEventListener('mouseup', onMouseUp);
+		}
+	}, [isCardDragged])
+
+  const onMouseDown = (e: MouseEvent) => {
     if (!ref.current || !canvasRef.current) {
       return;
     }
 
     setLayerIndex(MOVE_CARD_Z_INDEX);
-    isCardDragged.current = true;
-    shiftCursor.current = {
-      x: e.clientX - e.currentTarget.getBoundingClientRect().left,
-      y: e.clientY - e.currentTarget.getBoundingClientRect().top,
-    };
+	  setIsCardDragged(true)
 
-    canvasRef.current.addEventListener('mousemove', onMouseMove as unknown as EventListener);
-    canvasRef.current.addEventListener('mouseup', onMouseUp);
+	  prevCursor.current = {
+		  x: e.clientX / canvasScale,
+		  y: e.clientY / canvasScale,
+	  };
   };
 
   const onDoubleClick = () => {
@@ -87,9 +100,7 @@ export const Card: FC<Props> = memo(({ text, top, left, id }) => {
         zIndex: layerIndex,
       }}
       onDragStart={() => false}
-      onMouseDown={onMouseDown}
-      onMouseMove={onMouseMove}
-      onMouseUp={onMouseUp}
+      onMouseDown={onMouseDown as unknown as React.MouseEventHandler<HTMLDivElement>}
       onDoubleClick={onDoubleClick}
       className={styles.card}
     >

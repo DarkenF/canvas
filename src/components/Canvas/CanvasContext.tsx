@@ -50,14 +50,14 @@ export const useCanvasContext = () => {
 
   const { cards, setCards, ...rest } = context;
 
-  const onChangeCardPosition = useCallback((cardId: string, left: number, top: number) => {
+  const onChangeCardPosition = useCallback((cardId: string, offsetLeft: number, offsetTop: number) => {
     setCards((prev) =>
       prev.map((item) =>
         item.id === cardId
           ? {
               ...item,
-              left,
-              top,
+              left: item.left + offsetLeft,
+              top: item.top + offsetTop,
             }
           : item,
       ),
@@ -77,12 +77,7 @@ export const useCanvasContext = () => {
     );
   }, []);
 
-  const createCard = useCallback((e: MouseEvent<HTMLDivElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-
+  const createCard = useCallback((x: number, y: number) => {
     setCards((prev) => [
       ...prev,
       {

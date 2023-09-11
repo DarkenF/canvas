@@ -8,6 +8,11 @@
     flex-grow: 1;
     background: white;
 
+    .canvasInner {
+      width: 100%;
+      height: 100%;
+    }
+
     .editBackdrop {
       position: fixed;
       display: none;
