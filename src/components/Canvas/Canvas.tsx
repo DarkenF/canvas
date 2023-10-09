@@ -1,40 +1,42 @@
-import React, {MouseEvent, useEffect, useMemo, useRef, useState} from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import clsx from 'clsx';
 import { Card } from '../Card';
 
 import styles from './Canvas.module.scss';
 import { useCanvasContext } from './CanvasContext';
-import {useDragAndDrop} from "../../hooks/useDragAndDrop";
+import { useCanvasDrag } from '../../hooks/useCanvasDrag';
+import { useLatest } from '../../hooks/useLatest';
 
 interface CanvasPosition {
   x: number;
-	y: number;
+  y: number;
 }
+
+const MIN_SCALE = 0.125;
+const MAX_SCALE = 5;
 
 export const Canvas = () => {
   const [editMode, setEditMode] = useState<boolean>(false);
   const [position, setPosition] = useState<CanvasPosition>({
-	  x: 0,
-	  y: 0,
+    x: 0,
+    y: 0,
   });
   const [canvasScale, setCanvasScale] = useState<number>(1);
-	const cardsContainerRef = useRef<HTMLDivElement | null>(null);
+  const canvasScaleRef = useLatest<number>(canvasScale);
+  const cardsContainerRef = useRef<HTMLDivElement | null>(null);
 
   const { cards, createCard, canvasRef } = useCanvasContext();
 
-	useDragAndDrop({
-		scale: canvasScale,
-		onMouseMoveHandler: (offsetX, offsetY) => {
-			setPosition(prevState => ({
-				x: prevState.x + offsetX,
-				y: prevState.y + offsetY
-			}))
-		},
-		listenLayout: true,
-		layoutRef: canvasRef,
-		ref: cardsContainerRef
-	})
-
+  useCanvasDrag({
+    onMouseMoveHandler: (_e: MouseEvent, { offsetX, offsetY }) => {
+      setPosition((prevState) => ({
+        x: prevState.x + offsetX / canvasScale,
+        y: prevState.y + offsetY / canvasScale,
+      }));
+    },
+    containerRef: canvasRef,
+    targetRef: canvasRef,
+  });
 
   const onClickEdit = () => {
     setEditMode((prev) => {
@@ -42,37 +44,54 @@ export const Canvas = () => {
     });
   };
 
-  const onClickBackdrop = (e: MouseEvent<HTMLDivElement>) => {
-	  const containerRect = cardsContainerRef.current?.getBoundingClientRect()
+  const onClickBackdrop = (e: React.MouseEvent) => {
+    const containerRect = cardsContainerRef.current?.getBoundingClientRect();
 
-	  if (!containerRect) {
-			return
-	  }
+    if (!containerRect) {
+      return;
+    }
 
-	  const x = (e.clientX - containerRect.left) / canvasScale;
-	  const y = (e.clientY - containerRect.top) / canvasScale;
+    const x = (e.clientX - containerRect.left) / canvasScale;
+    const y = (e.clientY - containerRect.top) / canvasScale;
 
     createCard(x, y);
-	  setEditMode(false);
+    setEditMode(false);
   };
-
-	const onDragCanvas = (e: DragEvent) => {
-
-	}
 
   useEffect(() => {
     const onZoomCanvasHandler = (e: WheelEvent) => {
-
       const { deltaY } = e;
-      const scale = deltaY * -0.001;
+      const scaleAmount = deltaY * -0.001;
+      const nextScale = Math.min(Math.max(0.125, canvasScaleRef.current * (1 + scaleAmount)), 5);
 
-      setCanvasScale((prev) => {
-        return Math.min(Math.max(0.125, prev * (1 + scale)), 5);
-      });
-			// setPosition({
-			// 	x: 0,
-			// 	y: 0,
-			// })
+      setCanvasScale(nextScale);
+
+      if (canvasScaleRef.current === MIN_SCALE || canvasScaleRef.current === MAX_SCALE) {
+        return;
+      }
+
+      const canvasElement = canvasRef.current;
+
+      if (!canvasElement) {
+        return;
+      }
+
+      const distX = e.pageX / canvasElement.clientWidth;
+      const distY = e.pageY / canvasElement.clientHeight;
+
+      const trueCanvasWidth = canvasElement.clientWidth / canvasScaleRef.current;
+      const trueCanvasHeight = canvasElement.clientHeight / canvasScaleRef.current;
+
+      const diffZoomedX = trueCanvasWidth * scaleAmount;
+      const diffZoomedY = trueCanvasHeight * scaleAmount;
+
+      const diffAddLeft = diffZoomedX * distX;
+      const diffAddTop = diffZoomedY * distY;
+
+      setPosition((prev) => ({
+        x: prev.x - diffAddLeft,
+        y: prev.y - diffAddTop,
+      }));
     };
 
     canvasRef.current?.addEventListener('wheel', onZoomCanvasHandler);
@@ -91,11 +110,15 @@ export const Canvas = () => {
         <div className={clsx(styles.editBackdrop, editMode && styles.openBackdrop)} onClick={(e) => onClickBackdrop(e)}>
           Click to create Card
         </div>
-	      <div ref={cardsContainerRef} style={{ transform: `scale(${canvasScale}) translate(${position.x}px, ${position.y}px)` }} className={styles.canvasInner}>
-		      {cards.map((card) => (
-			      <Card key={card.id} canvasScale={canvasScale} {...card} />
-		      ))}
-	      </div>
+        <div
+          ref={cardsContainerRef}
+          style={{ transform: `scale(${canvasScale}) translate(${position.x}px, ${position.y}px)` }}
+          className={styles.canvasInner}
+        >
+          {cards.map((card) => (
+            <Card key={card.id} canvasScale={canvasScale} {...card} />
+          ))}
+        </div>
       </div>
     </div>
   );

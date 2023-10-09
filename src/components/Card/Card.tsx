@@ -1,16 +1,15 @@
-import React, {FC, useRef, useState, memo, useEffect, useCallback} from 'react';
+import React, { FC, useRef, useState, memo, useEffect } from 'react';
 import styles from './Card.module.scss';
 import { useOnClickOutside } from '../../hooks/useOnClickOutside';
 import { useCanvasContext } from '../Canvas';
-import { useRafThrottle } from '../../hooks/useRafThrottle';
-import {useDragAndDrop} from "../../hooks/useDragAndDrop";
+import { useCanvasDrag } from '../../hooks/useCanvasDrag';
 
 interface Props {
   id: string;
   top: number;
   left: number;
   text: string;
-	canvasScale: number;
+  canvasScale: number;
 }
 
 const MOVE_CARD_Z_INDEX = 1000;
@@ -24,20 +23,21 @@ export const Card: FC<Props> = memo(({ text, top, left, id, canvasScale }) => {
   const [layerIndex, setLayerIndex] = useState<number>(DEFAULT_CARD_Z_INDEX);
   const { onChangeCardPosition, onChangeCardText, canvasRef } = useCanvasContext();
 
-	useDragAndDrop({
-		scale: canvasScale,
-		onMouseMoveHandler: (offsetX, offsetY) => {
-			onChangeCardPosition(id, offsetX, offsetY);
-		},
-		onMouseUpHandler: () => {
-			setLayerIndex(DEFAULT_CARD_Z_INDEX);
-		},
-		onMouseDownHandler: () => {
-			setLayerIndex(MOVE_CARD_Z_INDEX);
-		},
-		layoutRef: canvasRef,
-		ref
-	})
+  useCanvasDrag({
+    onMouseMoveHandler: (_e, { offsetY, offsetX }) => {
+      onChangeCardPosition(id, offsetX / canvasScale, offsetY / canvasScale);
+    },
+    onMouseUpHandler: () => {
+      setLayerIndex(DEFAULT_CARD_Z_INDEX);
+    },
+    onMouseDownHandler: (e) => {
+      e.stopPropagation();
+
+      setLayerIndex(MOVE_CARD_Z_INDEX);
+    },
+    containerRef: canvasRef,
+    targetRef: ref,
+  });
 
   const onDoubleClick = () => {
     setEdit((prev) => !prev);
@@ -49,7 +49,9 @@ export const Card: FC<Props> = memo(({ text, top, left, id, canvasScale }) => {
     }
   }, [edit]);
 
-  useOnClickOutside(ref, () => setEdit(false));
+  useOnClickOutside(ref, () => {
+    setEdit(false);
+  });
 
   return (
     <div
