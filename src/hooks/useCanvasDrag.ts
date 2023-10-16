@@ -1,6 +1,6 @@
-import { MutableRefObject, useCallback, useEffect, useRef, useState } from 'react';
-import { useRafThrottle } from './useRafThrottle';
+import { MutableRefObject, useEffect, useRef } from 'react';
 import { useEvent } from './useEvent';
+import { rafThrottle } from '../utils/rafThrottle';
 
 interface MouseMoveData {
   offsetX: number;
@@ -32,35 +32,6 @@ export const useCanvasDrag = ({
   const onMouseUpHandlerEvent = useEvent(onMouseUpHandler);
   const onMouseMoveHandlerEvent = useEvent(onMouseMoveHandler);
 
-  const onMouseMove = useRafThrottle((e: MouseEvent) => {
-    if (!prevCursor.current) {
-      return;
-    }
-
-    const offsetY = e.clientY - prevCursor.current.y;
-    const offsetX = e.clientX - prevCursor.current.x;
-
-    prevCursor.current = {
-      x: prevCursor.current?.x + offsetX,
-      y: prevCursor.current?.y + offsetY,
-    };
-
-    onMouseMoveHandlerEvent?.(e, { offsetX, offsetY });
-  });
-
-  const onMouseUp = useCallback(() => {
-    const containerElement = containerRef.current;
-
-    if (!containerElement) {
-      return;
-    }
-
-    containerElement?.removeEventListener('mousemove', onMouseMove);
-    containerElement.removeEventListener('mouseup', onMouseUp);
-
-    onMouseUpHandlerEvent?.();
-  }, [onMouseMove]);
-
   useEffect(() => {
     const containerElement = containerRef.current;
     const element = targetRef.current;
@@ -68,6 +39,35 @@ export const useCanvasDrag = ({
     if (!containerElement || !element) {
       return;
     }
+
+    const onMouseMove = rafThrottle((e: MouseEvent) => {
+      if (!prevCursor.current) {
+        return;
+      }
+
+      const offsetY = e.clientY - prevCursor.current.y;
+      const offsetX = e.clientX - prevCursor.current.x;
+
+      prevCursor.current = {
+        x: prevCursor.current?.x + offsetX,
+        y: prevCursor.current?.y + offsetY,
+      };
+
+      onMouseMoveHandlerEvent?.(e, { offsetX, offsetY });
+    });
+
+    const onMouseUp = () => {
+      const containerElement = containerRef.current;
+
+      if (!containerElement) {
+        return;
+      }
+
+      containerElement?.removeEventListener('mousemove', onMouseMove);
+      containerElement.removeEventListener('mouseup', onMouseUp);
+
+      onMouseUpHandlerEvent?.();
+    };
 
     const handleMouseDown = (e: MouseEvent) => {
       prevCursor.current = {
@@ -88,5 +88,5 @@ export const useCanvasDrag = ({
       containerElement.removeEventListener('mousemove', onMouseMove);
       containerElement.removeEventListener('mouseup', onMouseUp);
     };
-  }, []);
+  }, [onMouseDownHandlerEvent, onMouseUpHandlerEvent, onMouseMoveHandlerEvent, containerRef, targetRef]);
 };

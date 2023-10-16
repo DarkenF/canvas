@@ -10,6 +10,7 @@ import { useLatest } from '../../hooks/useLatest';
 interface CanvasPosition {
   x: number;
   y: number;
+  scale: number;
 }
 
 const MIN_SCALE = 0.125;
@@ -20,9 +21,9 @@ export const Canvas = () => {
   const [position, setPosition] = useState<CanvasPosition>({
     x: 0,
     y: 0,
+    scale: 1,
   });
-  const [canvasScale, setCanvasScale] = useState<number>(1);
-  const canvasScaleRef = useLatest<number>(canvasScale);
+  const positionRef = useLatest<CanvasPosition>(position);
   const cardsContainerRef = useRef<HTMLDivElement | null>(null);
 
   const { cards, createCard, canvasRef } = useCanvasContext();
@@ -30,8 +31,9 @@ export const Canvas = () => {
   useCanvasDrag({
     onMouseMoveHandler: (_e: MouseEvent, { offsetX, offsetY }) => {
       setPosition((prevState) => ({
-        x: prevState.x + offsetX / canvasScale,
-        y: prevState.y + offsetY / canvasScale,
+        ...prevState,
+        x: prevState.x + offsetX,
+        y: prevState.y + offsetY,
       }));
     },
     containerRef: canvasRef,
@@ -45,61 +47,44 @@ export const Canvas = () => {
   };
 
   const onClickBackdrop = (e: React.MouseEvent) => {
-    const containerRect = cardsContainerRef.current?.getBoundingClientRect();
-
-    if (!containerRect) {
-      return;
-    }
-
-    const x = (e.clientX - containerRect.left) / canvasScale;
-    const y = (e.clientY - containerRect.top) / canvasScale;
+    const x = (e.clientX - position.x) / position.scale;
+    const y = (e.clientY - position.y) / position.scale;
 
     createCard(x, y);
     setEditMode(false);
   };
 
   useEffect(() => {
+    const canvasElement = canvasRef.current;
+
     const onZoomCanvasHandler = (e: WheelEvent) => {
       const { deltaY } = e;
+      const { scale, y, x } = positionRef.current;
       const scaleAmount = deltaY * -0.001;
-      const nextScale = Math.min(Math.max(0.125, canvasScaleRef.current * (1 + scaleAmount)), 5);
-
-      setCanvasScale(nextScale);
-
-      if (canvasScaleRef.current === MIN_SCALE || canvasScaleRef.current === MAX_SCALE) {
-        return;
-      }
-
-      const canvasElement = canvasRef.current;
+      const nextScale = Math.min(Math.max(MIN_SCALE, scale * (1 + scaleAmount)), MAX_SCALE);
 
       if (!canvasElement) {
         return;
       }
 
-      const distX = e.pageX / canvasElement.clientWidth;
-      const distY = e.pageY / canvasElement.clientHeight;
+      const scaleRatio = 1 - nextScale / scale;
 
-      const trueCanvasWidth = canvasElement.clientWidth / canvasScaleRef.current;
-      const trueCanvasHeight = canvasElement.clientHeight / canvasScaleRef.current;
-
-      const diffZoomedX = trueCanvasWidth * scaleAmount;
-      const diffZoomedY = trueCanvasHeight * scaleAmount;
-
-      const diffAddLeft = diffZoomedX * distX;
-      const diffAddTop = diffZoomedY * distY;
+      const diffAddLeft = (e.pageX - x) * scaleRatio;
+      const diffAddTop = (e.pageY - y) * scaleRatio;
 
       setPosition((prev) => ({
-        x: prev.x - diffAddLeft,
-        y: prev.y - diffAddTop,
+        x: prev.x + diffAddLeft,
+        y: prev.y + diffAddTop,
+        scale: nextScale,
       }));
     };
 
-    canvasRef.current?.addEventListener('wheel', onZoomCanvasHandler);
+    canvasElement?.addEventListener('wheel', onZoomCanvasHandler);
 
     return () => {
-      canvasRef.current?.removeEventListener('wheel', onZoomCanvasHandler);
+      canvasElement?.removeEventListener('wheel', onZoomCanvasHandler);
     };
-  }, [canvasRef]);
+  }, [canvasRef, positionRef]);
 
   return (
     <div className={styles.wrapper}>
@@ -112,11 +97,11 @@ export const Canvas = () => {
         </div>
         <div
           ref={cardsContainerRef}
-          style={{ transform: `scale(${canvasScale}) translate(${position.x}px, ${position.y}px)` }}
+          style={{ transform: `translate(${position.x}px, ${position.y}px) scale(${position.scale})` }}
           className={styles.canvasInner}
         >
           {cards.map((card) => (
-            <Card key={card.id} canvasScale={canvasScale} {...card} />
+            <Card key={card.id} canvasScale={position.scale} {...card} />
           ))}
         </div>
       </div>
