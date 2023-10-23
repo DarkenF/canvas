@@ -3,10 +3,19 @@
   height: 100%;
   display: flex;
 
+  .canvasBackground {
+    position: absolute;
+    height: 100vh;
+    width: 100vw;
+    background-color: white;
+    background-size: 25% 25%;
+    background-repeat: repeat;
+    background-image: linear-gradient(to right, #ccc 0.5px, transparent 1px), linear-gradient(to bottom, #ccc 0.5px, transparent 1px);
+  }
+
   .canvas {
     position: relative;
     flex-grow: 1;
-    background: white;
 
     .canvasInner {
       width: 100%;

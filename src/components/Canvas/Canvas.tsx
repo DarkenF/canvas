@@ -3,9 +3,10 @@ import clsx from 'clsx';
 import { Card } from '../Card';
 
 import styles from './Canvas.module.scss';
-import { useCanvasContext } from './CanvasContext';
 import { useCanvasDrag } from '../../hooks/useCanvasDrag';
 import { useLatest } from '../../hooks/useLatest';
+import { useCardsStore } from '../../store/store';
+import { useShallow } from 'zustand/react/shallow';
 
 interface CanvasPosition {
   x: number;
@@ -17,6 +18,8 @@ const MIN_SCALE = 0.125;
 const MAX_SCALE = 5;
 
 export const Canvas = () => {
+  const [cards, createCard] = useCardsStore(useShallow((state) => [state.cards, state.createCard]));
+
   const [editMode, setEditMode] = useState<boolean>(false);
   const [position, setPosition] = useState<CanvasPosition>({
     x: 0,
@@ -25,8 +28,7 @@ export const Canvas = () => {
   });
   const positionRef = useLatest<CanvasPosition>(position);
   const cardsContainerRef = useRef<HTMLDivElement | null>(null);
-
-  const { cards, createCard, canvasRef } = useCanvasContext();
+  const canvasRef = useRef<HTMLDivElement | null>(null);
 
   useCanvasDrag({
     onMouseMoveHandler: (_e: MouseEvent, { offsetX, offsetY }) => {
@@ -91,6 +93,10 @@ export const Canvas = () => {
       <button onClick={onClickEdit} className={clsx(styles.editBtn, editMode ? styles.defaultBtn : styles.activeBtn)}>
         Edit
       </button>
+      <div
+        className={styles.canvasBackground}
+        style={{ backgroundSize: `${1 / position.scale * 10}% ${1 / position.scale * 10}%` }}
+      ></div>
       <div className={styles.canvas} ref={canvasRef}>
         <div className={clsx(styles.editBackdrop, editMode && styles.openBackdrop)} onClick={(e) => onClickBackdrop(e)}>
           Click to create Card
@@ -101,7 +107,7 @@ export const Canvas = () => {
           className={styles.canvasInner}
         >
           {cards.map((card) => (
-            <Card key={card.id} canvasScale={position.scale} {...card} />
+            <Card key={card.id} canvasScale={position.scale} canvasRef={canvasRef} {...card} />
           ))}
         </div>
       </div>

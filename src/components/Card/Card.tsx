@@ -1,31 +1,39 @@
 import React, { FC, useRef, useState, memo, useEffect } from 'react';
 import styles from './Card.module.scss';
 import { useOnClickOutside } from '../../hooks/useOnClickOutside';
-import { useCanvasContext } from '../Canvas';
 import { useCanvasDrag } from '../../hooks/useCanvasDrag';
+import { useCardsStore } from '../../store/store';
+import { useShallow } from 'zustand/react/shallow';
+import { Textarea } from '../Textarea/Textarea';
 
 interface Props {
   id: string;
   top: number;
   left: number;
   text: string;
+  canvasRef: React.MutableRefObject<HTMLDivElement | null>;
   canvasScale: number;
 }
 
 const MOVE_CARD_Z_INDEX = 1000;
 const DEFAULT_CARD_Z_INDEX = 10;
 
-export const Card: FC<Props> = memo(({ text, top, left, id, canvasScale }) => {
+export const Card: FC<Props> = memo((props) => {
+  const { text, top, left, id, canvasScale, canvasRef } = props;
+
   const ref = useRef<HTMLDivElement | null>(null);
-  const inputRef = useRef<HTMLInputElement | null>(null);
+  const inputRef = useRef<HTMLTextAreaElement | null>(null);
 
   const [edit, setEdit] = useState<boolean>(false);
   const [layerIndex, setLayerIndex] = useState<number>(DEFAULT_CARD_Z_INDEX);
-  const { onChangeCardPosition, onChangeCardText, canvasRef } = useCanvasContext();
+
+  const [changeCardPosition, changeCardText] = useCardsStore(
+    useShallow((state) => [state.changeCardPosition, state.changeCardText]),
+  );
 
   useCanvasDrag({
     onMouseMoveHandler: (_e, { offsetY, offsetX }) => {
-      onChangeCardPosition(id, offsetX / canvasScale, offsetY / canvasScale);
+      changeCardPosition(id, offsetX / canvasScale, offsetY / canvasScale);
     },
     onMouseUpHandler: () => {
       setLayerIndex(DEFAULT_CARD_Z_INDEX);
@@ -66,7 +74,7 @@ export const Card: FC<Props> = memo(({ text, top, left, id, canvasScale }) => {
     >
       <h3>ID: {id}</h3>
       {edit ? (
-        <input ref={inputRef} type="text" value={text} onChange={(e) => onChangeCardText(id, e.target.value)} />
+        <Textarea ref={inputRef} value={text} onChange={(e) => changeCardText(id, e.target.value)} />
       ) : (
         <div className={styles.content}>{text}</div>
       )}
