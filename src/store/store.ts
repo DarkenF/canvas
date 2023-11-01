@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { immer } from 'zustand/middleware/immer'
 import { v4 as uuidv4 } from 'uuid';
 
 interface CardData {
@@ -15,16 +16,16 @@ interface CardsStore {
   createCard: (x: number, y: number) => void;
 }
 
-export const useCardsStore = create<CardsStore>((set, get) => ({
+export const useCardsStore = create<CardsStore>()(immer((set, get) => ({
   cards: [],
-  changeCardPosition: (cardId: string, offsetLeft: number, offsetTop: number) =>
+  changeCardPosition: (cardId: string, left: number, top: number) =>
     set((state) => ({
       cards: state.cards.map((item) =>
         item.id === cardId
           ? {
               ...item,
-              left: item.left + offsetLeft,
-              top: item.top + offsetTop,
+              left,
+              top,
             }
           : item,
       ),
@@ -52,4 +53,4 @@ export const useCardsStore = create<CardsStore>((set, get) => ({
         },
       ],
     }),
-}));
+})));

@@ -2,31 +2,33 @@ import React, { ChangeEvent, FC, HTMLAttributes, useEffect, useRef, useState } f
 
 import styles from './Textarea.module.scss';
 import { useCombinedRef } from '../../hooks/useCombinedRef';
+import {clsx} from "clsx";
 
 type TextareaAttributes = HTMLAttributes<HTMLTextAreaElement>;
 
 interface Props extends TextareaAttributes {
   initialRows?: number;
+	className: string;
   value?: string;
   onChange?: (e: ChangeEvent<HTMLTextAreaElement>) => void;
 }
 
 const MIN_ROWS = 3;
-const MAX_ROWS = 9;
+const MAX_ROWS = 11;
 
 const TEXTAREA_LINE_HEIGHT = 20;
 
 export const Textarea = React.forwardRef<HTMLTextAreaElement, Props>((props, ref) => {
-  const { initialRows = MIN_ROWS, onChange, value, ...rest } = props;
+  const { initialRows = MIN_ROWS, onChange, value, className, ...rest } = props;
 
-  const myRef = useRef<HTMLTextAreaElement | null>(null);
+  const localRef = useRef<HTMLTextAreaElement | null>(null);
 
-  const combinedRef = useCombinedRef<HTMLTextAreaElement>(ref, myRef);
+  const combinedRef = useCombinedRef<HTMLTextAreaElement>(ref, localRef);
 
   const [rows, setRows] = useState<number>(initialRows);
 
   useEffect(() => {
-    const scrollHeight = myRef.current?.scrollHeight;
+    const scrollHeight = localRef.current?.scrollHeight;
 
     if (!scrollHeight) {
       return;
@@ -40,7 +42,7 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, Props>((props, ref
   return (
     <textarea
       ref={combinedRef}
-      className={styles.textarea}
+      className={clsx(styles.textarea, className)}
       onWheel={(event) => {
         event.stopPropagation();
       }}

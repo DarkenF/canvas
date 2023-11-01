@@ -41,7 +41,7 @@ export const useCanvasDrag = ({
     }
 
     const onMouseMove = rafThrottle((e: MouseEvent) => {
-      if (!prevCursor.current) {
+      if (!prevCursor.current || (e.target as HTMLElement).localName === 'textarea') {
         return;
       }
 

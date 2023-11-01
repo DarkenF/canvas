@@ -65,7 +65,7 @@ export const Canvas = () => {
       const scaleAmount = deltaY * -0.001;
       const nextScale = Math.min(Math.max(MIN_SCALE, scale * (1 + scaleAmount)), MAX_SCALE);
 
-      if (!canvasElement) {
+      if (!canvasElement || (e.target as HTMLElement).localName === 'textarea') {
         return;
       }
 

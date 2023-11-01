@@ -1,4 +1,4 @@
-import React, { FC, useRef, useState, memo, useEffect } from 'react';
+import React, {FC, useRef, useState, memo, useEffect, SyntheticEvent} from 'react';
 import styles from './Card.module.scss';
 import { useOnClickOutside } from '../../hooks/useOnClickOutside';
 import { useCanvasDrag } from '../../hooks/useCanvasDrag';
@@ -18,6 +18,11 @@ interface Props {
 const MOVE_CARD_Z_INDEX = 1000;
 const DEFAULT_CARD_Z_INDEX = 10;
 
+interface CardPosition {
+	x: number;
+	y: number;
+}
+
 export const Card: FC<Props> = memo((props) => {
   const { text, top, left, id, canvasScale, canvasRef } = props;
 
@@ -26,6 +31,8 @@ export const Card: FC<Props> = memo((props) => {
 
   const [edit, setEdit] = useState<boolean>(false);
   const [layerIndex, setLayerIndex] = useState<number>(DEFAULT_CARD_Z_INDEX);
+  const [localCardPosition, setLocalCardPosition] = useState<CardPosition>({x: left, y: top});
+  const [localComment, setLocalComment] = useState<string>(text);
 
   const [changeCardPosition, changeCardText] = useCardsStore(
     useShallow((state) => [state.changeCardPosition, state.changeCardText]),
@@ -33,10 +40,18 @@ export const Card: FC<Props> = memo((props) => {
 
   useCanvasDrag({
     onMouseMoveHandler: (_e, { offsetY, offsetX }) => {
-      changeCardPosition(id, offsetX / canvasScale, offsetY / canvasScale);
+	    setLocalCardPosition(prev =>  ({
+					x: prev.x + offsetX / canvasScale,
+					y: prev.y + offsetY / canvasScale,
+				})
+			)
     },
     onMouseUpHandler: () => {
-      setLayerIndex(DEFAULT_CARD_Z_INDEX);
+			if (localCardPosition.x !== left && localCardPosition.y !== top) {
+				changeCardPosition(id, localCardPosition.x, localCardPosition.y);
+			}
+
+	    setLayerIndex(DEFAULT_CARD_Z_INDEX);
     },
     onMouseDownHandler: (e) => {
       e.stopPropagation();
@@ -58,25 +73,32 @@ export const Card: FC<Props> = memo((props) => {
   }, [edit]);
 
   useOnClickOutside(ref, () => {
+		changeCardText(id, localComment);
     setEdit(false);
   });
+
+
+	useEffect(() => {
+		inputRef.current?.addEventListener('wheel',(e) => {
+			e.stopPropagation()
+		});
+	}, [])
 
   return (
     <div
       ref={ref}
       style={{
-        transform: `translate(${left}px, ${top}px)`,
+        transform: `translate(${localCardPosition.x}px, ${localCardPosition.y}px)`,
         zIndex: layerIndex,
       }}
-      onDragStart={() => false}
       onDoubleClick={onDoubleClick}
       className={styles.card}
     >
-      <h3>ID: {id}</h3>
+      <h5>ID: {id}</h5>
       {edit ? (
-        <Textarea ref={inputRef} value={text} onChange={(e) => changeCardText(id, e.target.value)} />
+        <Textarea ref={inputRef} value={localComment} className={styles.textArea} onChange={(e) => setLocalComment(e.target.value)} />
       ) : (
-        <div className={styles.content}>{text}</div>
+        <div className={styles.content}>{localComment}</div>
       )}
     </div>
   );
