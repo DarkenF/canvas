@@ -1,14 +1,14 @@
-import React, { ChangeEvent, FC, HTMLAttributes, useEffect, useRef, useState } from 'react';
+import React, { ChangeEvent, HTMLAttributes, useEffect, useRef, useState } from 'react';
 
 import styles from './Textarea.module.scss';
 import { useCombinedRef } from '../../hooks/useCombinedRef';
-import {clsx} from "clsx";
+import { clsx } from 'clsx';
 
 type TextareaAttributes = HTMLAttributes<HTMLTextAreaElement>;
 
 interface Props extends TextareaAttributes {
   initialRows?: number;
-	className: string;
+  className: string;
   value?: string;
   onChange?: (e: ChangeEvent<HTMLTextAreaElement>) => void;
 }

@@ -17,6 +17,9 @@ interface CanvasPosition {
 const MIN_SCALE = 0.125;
 const MAX_SCALE = 5;
 
+const MAX_GRID_SIZE = 100;
+const MIN_GRID_SIZE = 20;
+
 export const Canvas = () => {
   const [cards, createCard] = useCardsStore(useShallow((state) => [state.cards, state.createCard]));
 
@@ -29,6 +32,12 @@ export const Canvas = () => {
   const positionRef = useLatest<CanvasPosition>(position);
   const cardsContainerRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLDivElement | null>(null);
+
+  const canvasScalePerPercent = (MAX_SCALE - MIN_SCALE) / (MAX_GRID_SIZE - MIN_GRID_SIZE);
+  const gridSize = Math.min(
+    Math.max(MIN_GRID_SIZE, MAX_GRID_SIZE - (position.scale - MIN_SCALE) / canvasScalePerPercent),
+    MAX_GRID_SIZE,
+  );
 
   useCanvasDrag({
     onMouseMoveHandler: (_e: MouseEvent, { offsetX, offsetY }) => {
@@ -93,10 +102,7 @@ export const Canvas = () => {
       <button onClick={onClickEdit} className={clsx(styles.editBtn, editMode ? styles.defaultBtn : styles.activeBtn)}>
         Edit
       </button>
-      <div
-        className={styles.canvasBackground}
-        style={{ backgroundSize: `${1 / position.scale * 10}% ${1 / position.scale * 10}%` }}
-      ></div>
+      <div className={styles.canvasBackground} style={{ backgroundSize: `${gridSize}% ${gridSize}%` }}></div>
       <div className={styles.canvas} ref={canvasRef}>
         <div className={clsx(styles.editBackdrop, editMode && styles.openBackdrop)} onClick={(e) => onClickBackdrop(e)}>
           Click to create Card
