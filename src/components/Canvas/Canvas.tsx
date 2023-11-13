@@ -97,12 +97,18 @@ export const Canvas = () => {
     };
   }, [canvasRef, positionRef]);
 
+	const inset = -(1 / (position.scale) - 1) * 100;
+
   return (
     <div className={styles.wrapper}>
       <button onClick={onClickEdit} className={clsx(styles.editBtn, editMode ? styles.defaultBtn : styles.activeBtn)}>
         Edit
       </button>
-      <div className={styles.canvasBackground} style={{ backgroundSize: `${gridSize}% ${gridSize}%` }}></div>
+      <div className={styles.canvasBackground} style={{
+	      backgroundPosition: `${position.x / position.scale}px ${position.y / position.scale}px`,
+	      transform: `scale(${Math.abs(position.scale - 1) + 1})`,
+			}}
+      />
       <div className={styles.canvas} ref={canvasRef}>
         <div className={clsx(styles.editBackdrop, editMode && styles.openBackdrop)} onClick={(e) => onClickBackdrop(e)}>
           Click to create Card
