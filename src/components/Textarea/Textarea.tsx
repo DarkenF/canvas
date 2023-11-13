@@ -1,4 +1,4 @@
-import React, { ChangeEvent, HTMLAttributes, useEffect, useRef, useState } from 'react';
+import React, { ChangeEvent, HTMLAttributes, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 import styles from './Textarea.module.scss';
 import { useCombinedRef } from '../../hooks/useCombinedRef';
@@ -34,23 +34,61 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, Props>((props, ref
       return;
     }
 
-    const currentRows = Math.round(scrollHeight / TEXTAREA_LINE_HEIGHT);
-
-    setRows(Math.min(currentRows, MAX_ROWS));
+    setRows((rows) => (value ? value.split('\n').length : rows));
   }, [value]);
 
+  useLayoutEffect(() => {
+    const textArea = localRef.current;
+    if (!textArea) {
+      return;
+    }
+
+    const ro = new ResizeObserver(([entry]) => {
+      const height = entry.borderBoxSize[0].inlineSize ?? TEXTAREA_LINE_HEIGHT;
+      console.log(height);
+    });
+
+    ro.observe(textArea);
+
+    return () => {
+      ro.disconnect();
+    };
+  }, []);
+
   return (
-    <textarea
-      ref={combinedRef}
-      className={clsx(styles.textarea, className)}
-      onWheel={(event) => {
-        event.stopPropagation();
-      }}
-      rows={rows}
-      value={value}
-      onChange={onChange}
-      style={{ lineHeight: `${TEXTAREA_LINE_HEIGHT}px` }}
-      {...rest}
-    />
+    <div style={{ position: 'relative', overflow: 'auto' }}>
+      <textarea
+        ref={combinedRef}
+        className={clsx(styles.textarea, className)}
+        onWheel={(event) => {
+          event.stopPropagation();
+        }}
+        rows={rows}
+        value={value}
+        onChange={onChange}
+        style={{
+          lineHeight: `${TEXTAREA_LINE_HEIGHT}px`,
+          position: 'absolute',
+          inset: 0,
+          background: 'inherit',
+          overflow: 'hidden',
+        }}
+        {...rest}
+      />
+      <pre
+        style={{
+          lineHeight: TEXTAREA_LINE_HEIGHT + 'px',
+          visibility: 'visible',
+          minHeight: '100%',
+          whiteSpace: 'pre-wrap',
+          wordWrap: 'break-word',
+          margin: 0,
+          fontSize: 16,
+          fontFamily: `-apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif`,
+        }}
+      >
+        {value}
+      </pre>
+    </div>
   );
 });
