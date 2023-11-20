@@ -34,10 +34,6 @@ export const Canvas = () => {
   const canvasRef = useRef<HTMLDivElement | null>(null);
 
   const canvasScalePerPercent = (MAX_SCALE - MIN_SCALE) / (MAX_GRID_SIZE - MIN_GRID_SIZE);
-  const gridSize = Math.min(
-    Math.max(MIN_GRID_SIZE, MAX_GRID_SIZE - (position.scale - MIN_SCALE) / canvasScalePerPercent),
-    MAX_GRID_SIZE,
-  );
 
   useCanvasDrag({
     onMouseMoveHandler: (_e: MouseEvent, { offsetX, offsetY }) => {
@@ -97,31 +93,36 @@ export const Canvas = () => {
     };
   }, [canvasRef, positionRef]);
 
-	const inset = -(1 / (position.scale) - 1) * 100;
+  const inset = -(1 / position.scale - 1) * 100;
 
   return (
-    <div className={styles.wrapper}>
+    <div className={styles.wrapper} ref={canvasRef}>
       <button onClick={onClickEdit} className={clsx(styles.editBtn, editMode ? styles.defaultBtn : styles.activeBtn)}>
         Edit
       </button>
-      <div className={styles.canvasBackground} style={{
-	      backgroundPosition: `${position.x / position.scale}px ${position.y / position.scale}px`,
-	      transform: `scale(${Math.abs(position.scale - 1) + 1})`,
-			}}
+      <div
+        className={styles.canvasBackground}
+        style={{
+          top: 0,
+          left: 0,
+          right: `${inset}%`,
+          bottom: `${inset}%`,
+          backgroundPosition: `${position.x / position.scale}px ${position.y / position.scale}px`,
+          transform: `scale(${position.scale})`,
+        }}
       />
-      <div className={styles.canvas} ref={canvasRef}>
-        <div className={clsx(styles.editBackdrop, editMode && styles.openBackdrop)} onClick={(e) => onClickBackdrop(e)}>
-          Click to create Card
-        </div>
-        <div
-          ref={cardsContainerRef}
-          style={{ transform: `translate(${position.x}px, ${position.y}px) scale(${position.scale})` }}
-          className={styles.canvasInner}
-        >
-          {cards.map((card) => (
-            <Card key={card.id} canvasScale={position.scale} canvasRef={canvasRef} {...card} />
-          ))}
-        </div>
+
+      <div className={clsx(styles.editBackdrop, editMode && styles.openBackdrop)} onClick={(e) => onClickBackdrop(e)}>
+        Click to create Card
+      </div>
+      <div
+        ref={cardsContainerRef}
+        style={{ transform: `translate(${position.x}px, ${position.y}px) scale(${position.scale})` }}
+        className={styles.canvasInner}
+      >
+        {cards.map((card) => (
+          <Card key={card.id} canvasScale={position.scale} canvasRef={canvasRef} {...card} />
+        ))}
       </div>
     </div>
   );
